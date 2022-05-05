@@ -1,1 +1,11 @@
-{}
+{
+    "terminal.integrated.fontFamily": "SauceCodePro NF",
+    "editor.inlineSuggest.enabled": true,
+    "workbench.startupEditor": "none",
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+}

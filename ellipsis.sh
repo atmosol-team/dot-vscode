@@ -2,6 +2,11 @@
 
 # List of vscode extensions to install
 extensions=(
+    "ms-azuretools.vscode-docker"
+    "github.copilot"
+    "esbenp.prettier-vscode"
+    "mechatroner.rainbow-csv"
+    "ms-vscode-remote.remote-wsl"
 );
 
 pkg.install() {
