@@ -5,43 +5,56 @@ extensions=(
 );
 
 pkg.install() {
+    # Attempt to install vscode
+    if ! utils.cmd_exists code; then
+        case $(os.platform) in
+            osx)
+                if utils.cmd_exists brew; then
+                    brew install --cask visual-studio-code
+                fi
+                ;;
+            wsl2)
+                ## Install dot-chocolatey if it's not installed
+                if ! utils.cmd_exists choco; then
+                    $ELLIPSIS_PATH/bin/ellipsis install thomshouse-ellipsis/chocolatey
+                fi
+                ## Install choco package(s)
+                choco install vscode -y
+                ;;
+            linux)
+                ## Install apt-package(s)
+                if utils.cmd_exists apt-get; then
+                    wget -O "${TMPDIR:-/tmp}/vscode.deb" "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64"
+                    DEBIAN_FRONTEND=noninteractive sudo apt-get update -y && sudo apt install -y "${TMPDIR:-/tmp}/vscode.deb"
+                fi
+                ;;
+        esac
+    fi
+
+    # Attempt to install jq for config sync
+    if ! utils.cmd_exists jq; then
+        case $(os.platform) in
+            osx)
+                if utils.cmd_exists brew; then
+                    brew install jq
+                fi
+                ;;
+            wsl2|linux)
+                if utils.cmd_exists apt-get; then
+                    DEBIAN_FRONTEND=noninteractive sudo apt-get update -y && sudo apt-get install -y jq
+                fi
+        esac
+    fi
+
+    # Merge the config files
     case $(os.platform) in
         osx)
-            ## Install homebrew cask(s)
-            if utils.cmd_exists brew; then
-                brew install --cask visual-studio-code
-                brew install jq
-            fi
             VSCONFIGPATH="$HOME/Library/Application\ Support/Code/User"
             ;;
         wsl2)
-            ## Install dot-chocolatey if it's not installed
-            if ! utils.cmd_exists choco; then
-                $ELLIPSIS_PATH/bin/ellipsis installed | grep 'chocolatey' >/dev/null 2>&1
-                if [ $? -eq 0 ]; then
-                    $ELLIPSIS_PATH/bin/ellipsis pull chocolatey
-                    $ELLIPSIS_PATH/bin/ellipsis reinstall chocolatey
-                else
-                    $ELLIPSIS_PATH/bin/ellipsis install thomshouse-ellipsis/chocolatey
-                fi
-            fi
-            ## Install choco package(s)
-            if utils.cmd_exists choco; then
-                choco install vscode -y
-            fi
-            ## Install apt-package(s)
-            if utils.cmd_exists apt-get; then
-                DEBIAN_FRONTEND=noninteractive sudo apt-get update -y && sudo apt-get install -y jq
-            fi
             VSCONFIGPATH="$(wslpath -u "$(cmd.exe /C echo %APPDATA% 2> /dev/null | sed -e 's/\r//g')")/Code/User"
             ;;
         linux)
-            ## Install apt-package(s)
-            if utils.cmd_exists apt-get; then
-                wget -O "${TMPDIR:-/tmp}/vscode.deb" https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64
-                DEBIAN_FRONTEND=noninteractive sudo apt-get update -y && sudo apt install -y "${TMPDIR:-/tmp}/vscode.deb"
-                DEBIAN_FRONTEND=noninteractive sudo apt-get install -y jq
-            fi
             VSCONFIGPATH="$HOME/.config/Code/User"
             ;;
     esac
@@ -51,8 +64,24 @@ pkg.install() {
     mv "${TMPDIR:-/tmp}/vscode-settings.json" "$VSCONFIGPATH/settings.json"
 
     # Install each vscode extension
-    for extension in "${extensions[*]}"; do
-        code --install-extension "$extension"
+    if [ $(os.platform) = "wsl2" ]; then
+        # Install on Windows side for WSL installs
+        # Check installed extensions
+        INSTALLED_EXTS="$(cmd.exe /C code --list-extensions 2>/dev/null)"
+        for extension in "${extensions[@]}"; do
+            # Iterate through extensions and install if not installed
+            if ! echo "$INSTALLED_EXTS" | grep -q "$extension"; then
+                cmd.exe /C "code --install-extension $extension" 2> /dev/null
+            fi
+        done
+    fi
+    # Install in osx/linux/WSL environments
+    INSTALLED_EXTS="$(code --list-extensions)"
+    for extension in "${extensions[@]}"; do
+        # Iterate through extensions and install if not installed
+        if ! echo "$INSTALLED_EXTS" | grep -q "$extension"; then
+            code --install-extension "$extension"
+        fi
     done
 
     # Initialize the package
