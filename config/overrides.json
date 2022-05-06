@@ -1,6 +1,5 @@
 {
     "files.eol": "\n",
     "window.openFoldersInNewWindow": "on",
-    "prettier.tabWidth": 4,
-    "prettier.printWidth": 120
+    "prettier.tabWidth": 4
 }
