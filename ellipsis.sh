@@ -3,6 +3,7 @@
 # List of vscode extensions to install
 extensions=(
     "ms-azuretools.vscode-docker"
+    "eamodio.gitlens"
     "esbenp.prettier-vscode"
     "mechatroner.rainbow-csv"
     "ms-vscode-remote.remote-wsl"
